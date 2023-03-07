@@ -10,6 +10,10 @@ def sigmoid(x):
 def sigmoid_prime(x):
     return sigmoid(x) * (1 - sigmoid(x))
 
+def relu(x):
+    return max(0, x)
+
+
 
 class NeuralNetwork:
 
