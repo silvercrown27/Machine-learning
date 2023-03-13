@@ -26,6 +26,11 @@ def softmax(x):
     exp_x = np.exp(x)
     return exp_x / (np.sum(exp_x, axis=1, keepdims=True))
 
+def one_hot(y):
+    one_hot_y = np.zeros((y.size, y.max() + 1))
+    one_hot_y[np.arange(y.size), y] = 1
+
+
 class NeuralNetwork:
     def __init__(self, layer_density=10, learning_rate=0.3, epochs=1000):
         self.epochs = epochs
@@ -62,9 +67,9 @@ class NeuralNetwork:
 
     def fit(self, X, y):
         for i in range(self.epochs):
-            params = self.forward_prop(X)
-            params_2 = self.back_prop(X, y)
-            self.update_params(params_2)
+            z1, a1, z2, a2 = self.forward_prop(X)
+            dw1, db1, dw2, db2 = self.back_prop(X, y, z1, a1, a2)
+            self.update_params(dw1, db1, dw2, db2)
             if i % 100 == 0:
                 print("Epoch" + "=" * 20 + ">: " + f"{i}")
 
