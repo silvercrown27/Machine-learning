@@ -8,16 +8,18 @@ digits = load_digits()
 
 # Normalize the pixel values between 0 and 1
 X = digits.images
+print(X.shape)
 y = digits.target
 X = X / 16.0
-
+print(X.shape)
+print(y.shape)
 # Reshape the input images into 1D arrays
 X = X.reshape(X.shape[0], -1)
-
+print(X.shape)
 # One-hot encode the target labels
 y_one_hot = np.zeros((y.shape[0], 10))
 y_one_hot[np.arange(y.shape[0]), y] = 1
-
+print(y_one_hot.shape)
 # Define the neural network architecture
 input_size = X.shape[1]
 hidden_size = 128
