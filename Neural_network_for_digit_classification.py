@@ -63,6 +63,7 @@ for epoch in range(num_epochs):
         A1 = relu(Z1)
         Z2 = np.dot(A1, W2) + b2
         A2 = softmax(Z2)
+        print(A2)
 
         # Compute the loss
         loss = -np.sum(y_batch * np.log(A2)) / batch_size
@@ -76,7 +77,7 @@ for epoch in range(num_epochs):
         dZ1 = dA1 * (Z1 > 0)
         dW1 = np.dot(X_batch.T, dZ1) / batch_size
         db1 = np.sum(dZ1, axis=0, keepdims=True) / batch_size
-
+        # print(dW1, db1, dW2, db2)
         # Update the weights
         W2 -= learning_rate * dW2
         b2 -= learning_rate * db2
