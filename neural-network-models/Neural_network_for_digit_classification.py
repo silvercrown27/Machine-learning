@@ -32,7 +32,6 @@ b1 = np.zeros((1, hidden_size))
 W2 = np.random.randn(hidden_size, output_size) * 0.01
 b2 = np.zeros((1, output_size))
 
-
 # Define the activation function (ReLU)
 def relu(x):
     return np.maximum(0, x)
@@ -57,13 +56,14 @@ for epoch in range(num_epochs):
         indices = np.random.choice(X.shape[0], batch_size, replace=False)
         X_batch = X[indices]
         y_batch = y_one_hot[indices]
+        print(y_batch.shape)
 
         # Forward propagation
         Z1 = np.dot(X_batch, W1) + b1
         A1 = relu(Z1)
         Z2 = np.dot(A1, W2) + b2
         A2 = softmax(Z2)
-        print(A2)
+        print("forward prop\n", Z1.shape, "\n", A1.shape, "\n", Z2.shape, "\n", A2.shape, "\n", y_batch.shape)
 
         # Compute the loss
         loss = -np.sum(y_batch * np.log(A2)) / batch_size
@@ -77,12 +77,14 @@ for epoch in range(num_epochs):
         dZ1 = dA1 * (Z1 > 0)
         dW1 = np.dot(X_batch.T, dZ1) / batch_size
         db1 = np.sum(dZ1, axis=0, keepdims=True) / batch_size
-        # print(dW1, db1, dW2, db2)
+        print(dZ1.shape, "\n", dZ2.shape, "\n", dW2.shape, "\n", db2.shape, "\n",)
+
         # Update the weights
         W2 -= learning_rate * dW2
         b2 -= learning_rate * db2
         W1 -= learning_rate * dW1
         b1 -= learning_rate * db1
+        break
 
     epoch_loss /= num_batches
     print(f"Epoch {epoch + 1}/{num_epochs}, Loss: {epoch_loss:.4f}")
