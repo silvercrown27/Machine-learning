@@ -22,16 +22,6 @@ y_train = (train_data[0]).reshape(1000, 1)
 X_valid = scaler.transform(train_data[1:n])
 y_valid = valid_data[0]
 
-def relu(x):
-    return np.maximum(0, x)
-
-def deriv_relu(x):
-    return x > 0
-def sigmoid(x):
-    return 1 / (1 + np.exp(-x))
-def deriv_sigmoid(x):
-    return sigmoid(x) * (1 - sigmoid(x))
-
 def softmax(x):
     x_max = np.max(x, axis=1, keepdims=True)
     exp_x = np.exp(x - x_max)
@@ -44,7 +34,7 @@ def one_hot(y):
     return one_hot_y
 
 class NeuralNetwork:
-    def __init__(self, layer_density=556, learning_rate=0.001, epochs=100):
+    def __init__(self, layer_density=556, learning_rate=0.001, epochs=200):
         self.epochs = epochs
         self.hidden_size = layer_density
         self.input_size = X_train.shape[0]
@@ -99,16 +89,21 @@ class NeuralNetwork:
         return np.mean(y_pred == y)
 
     def fit(self, X, y):
-        for epoch in range(self.epochs):
+        for epoch in range(self.epochs + 1):
             self.forward(X)
             self.backward(X, y)
             ls = self.loss(X, y)
+            accuracy = self.accuracy(X, y)
             if epoch % 10 == 0:
-                print("Epoch" + "=" * 25 + ">: " + f"{epoch}")
+                print("Epoch " + "=" * 25 + ">: " + f"{epoch}")
                 print(f"Loss: {ls}")
+                print(f"Accuracy: {accuracy}")
+                print("\n")
 
             if (np.argwhere(np.isnan(self.b1))).any():
                 break
 
 model = NeuralNetwork()
 model.fit(X_train.T, y_train.T)
+acc = model.accuracy(X_valid.T, y_valid.T)
+print(f"Accuracy: {acc}")
