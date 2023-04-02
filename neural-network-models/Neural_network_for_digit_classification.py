@@ -1,98 +1,114 @@
+import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
+from sklearn.preprocessing import StandardScaler
 
-# Load the MNIST dataset
-from sklearn.datasets import load_digits
 
-digits = load_digits()
+path = f"C://Datasets/digit-set/digit-recognizer/train.csv"
+data = pd.read_csv(path)
 
-# Normalize the pixel values between 0 and 1
-X = digits.images
-print(X.shape)
-y = digits.target
-X = X / 16.0
-print(X.shape)
-print(y.shape)
-# Reshape the input images into 1D arrays
-X = X.reshape(X.shape[0], -1)
-print(X.shape)
-# One-hot encode the target labels
-y_one_hot = np.zeros((y.shape[0], 10))
-y_one_hot[np.arange(y.shape[0]), y] = 1
-print(y_one_hot.shape)
-# Define the neural network architecture
-input_size = X.shape[1]
-hidden_size = 128
-output_size = 10
-learning_rate = 0.1
+data = np.array(data)
 
-# Initialize the weights
-W1 = np.random.randn(input_size, hidden_size) * 0.01
-b1 = np.zeros((1, hidden_size))
-W2 = np.random.randn(hidden_size, output_size) * 0.01
-b2 = np.zeros((1, output_size))
+scaler = StandardScaler()
 
-# Define the activation function (ReLU)
+# Fit the scaler to the data and transform the data
+m, n = data.shape
+np.random.shuffle(data)
+
+valid_data = data[0:10000].T
+train_data = data[10000:11000].T
+
+X_train = scaler.fit_transform(train_data[1:n])
+y_train = (train_data[0]).reshape(1000, 1)
+X_valid = scaler.transform(train_data[1:n])
+y_valid = valid_data[0]
+
 def relu(x):
     return np.maximum(0, x)
 
+def deriv_relu(x):
+    return x > 0
+def sigmoid(x):
+    return 1 / (1 + np.exp(-x))
+def deriv_sigmoid(x):
+    return sigmoid(x) * (1 - sigmoid(x))
 
-# Define the softmax function
 def softmax(x):
-    exp_x = np.exp(x)
+    x_max = np.max(x, axis=1, keepdims=True)
+    exp_x = np.exp(x - x_max)
     return exp_x / np.sum(exp_x, axis=1, keepdims=True)
 
+def one_hot(y):
+    one_hot_y = np.zeros((y.size, y.max() + 1))
+    one_hot_y[np.arange(y.size), y] = 1
+    one_hot_y = one_hot_y.T
+    return one_hot_y
 
-# Train the neural network using mini-batch gradient descent
-batch_size = 64
-num_epochs = 10
-num_batches = X.shape[0] // batch_size
+class NeuralNetwork:
+    def __init__(self, layer_density=556, learning_rate=0.001, epochs=100):
+        self.epochs = epochs
+        self.hidden_size = layer_density
+        self.input_size = X_train.shape[0]
+        self.learning_rate = learning_rate
 
-for epoch in range(num_epochs):
-    epoch_loss = 0.0
+        # Initialize weights and biases
+        self.W1 = np.random.randn(self.input_size, self.hidden_size) * 0.01
+        self.b1 = np.zeros((1, self.hidden_size))
+        self.W2 = np.random.randn(self.hidden_size, 10) * 0.01
+        self.b2 = np.zeros((1, 10))
 
-    for batch in range(num_batches):
-        # Select a random batch of inputs and labels
-        indices = np.random.choice(X.shape[0], batch_size, replace=False)
-        X_batch = X[indices]
-        y_batch = y_one_hot[indices]
-        print(y_batch.shape)
+    def forward(self, X):
+        # Forward pass
+        self.z1 = np.dot(X, self.W1) + self.b1
+        self.a1 = np.tanh(self.z1)
+        self.z2 = np.dot(self.a1, self.W2) + self.b2
+        self.y_hat = softmax(self.z2)
 
-        # Forward propagation
-        Z1 = np.dot(X_batch, W1) + b1
-        A1 = relu(Z1)
-        Z2 = np.dot(A1, W2) + b2
-        A2 = softmax(Z2)
-        print("forward prop\n", Z1.shape, "\n", A1.shape, "\n", Z2.shape, "\n", A2.shape, "\n", y_batch.shape)
+    def backward(self, X, y):
+        y = y.astype(int)
 
-        # Compute the loss
-        loss = -np.sum(y_batch * np.log(A2)) / batch_size
-        epoch_loss += loss
+        # Backward pass
+        delta3 = self.y_hat
+        delta3[range(len(X)), y] -= 1
+        delta2 = np.dot(delta3, self.W2.T) * (1 - np.power(self.a1, 2))
+        dW2 = np.dot(self.a1.T, delta3)
+        db2 = np.sum(delta3, axis=0, keepdims=True)
+        dW1 = np.dot(X.T, delta2)
+        db1 = np.sum(delta2, axis=0)
 
-        # Backward propagation
-        dZ2 = A2 - y_batch
-        dW2 = np.dot(A1.T, dZ2) / batch_size
-        db2 = np.sum(dZ2, axis=0, keepdims=True) / batch_size
-        dA1 = np.dot(dZ2, W2.T)
-        dZ1 = dA1 * (Z1 > 0)
-        dW1 = np.dot(X_batch.T, dZ1) / batch_size
-        db1 = np.sum(dZ1, axis=0, keepdims=True) / batch_size
-        print(dZ1.shape, "\n", dZ2.shape, "\n", dW2.shape, "\n", db2.shape, "\n",)
+        # Update weights and biases
+        self.W1 -= self.learning_rate * dW1
+        self.b1 -= self.learning_rate * db1
+        self.W2 -= self.learning_rate * dW2
+        self.b2 -= self.learning_rate * db2
 
-        # Update the weights
-        W2 -= learning_rate * dW2
-        b2 -= learning_rate * db2
-        W1 -= learning_rate * dW1
-        b1 -= learning_rate * db1
-        break
+    def predict(self, X):
+        # Predict the class of input data
+        self.forward(X)
+        return np.argmax(self.y_hat, axis=1)
 
-    epoch_loss /= num_batches
-    print(f"Epoch {epoch + 1}/{num_epochs}, Loss: {epoch_loss:.4f}")
+    def loss(self, X, y):
+        # Calculate the cross-entropy loss
+        self.forward(X)
+        m = len(X)
+        loss = -np.sum(np.log(self.y_hat[range(m), y])) / m
+        return loss
 
-# Plot the training accuracy
-Z1 = np.dot(X, W1) + b1
-A1 = relu(Z1)
-Z2 = np.dot(A1, W2) + b2
-y_pred = np.argmax(Z2, axis=1)
-accuracy = np.mean(y_pred == y)
-print(f"Training accuracy: {accuracy:.4f}")
+    def accuracy(self, X, y):
+        # Calculate the accuracy
+        y_pred = self.predict(X)
+        return np.mean(y_pred == y)
+
+    def fit(self, X, y):
+        for epoch in range(self.epochs):
+            self.forward(X)
+            self.backward(X, y)
+            ls = self.loss(X, y)
+            if epoch % 10 == 0:
+                print("Epoch" + "=" * 25 + ">: " + f"{epoch}")
+                print(f"Loss: {ls}")
+
+            if (np.argwhere(np.isnan(self.b1))).any():
+                break
+
+model = NeuralNetwork()
+model.fit(X_train.T, y_train.T)

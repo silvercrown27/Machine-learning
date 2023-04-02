@@ -2,7 +2,6 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 
-
 path = f"C://Datasets/digit-set/digit-recognizer/train.csv"
 data = pd.read_csv(path)
 
@@ -18,11 +17,10 @@ valid_data = data[0:10000].T
 train_data = data[10000:11000].T
 
 X_train = scaler.fit_transform(train_data[1:n])
-y_train = (train_data[0]).reshape(1000, 1)
+y_train = (train_data[0, 0:1000]).reshape(1000, 1)
 X_valid = scaler.transform(train_data[1:n])
-y_valid = valid_data[0]
+y_valid = train_data[0, 1000:m]
 
-print(X_train.shape)
 
 def relu(x):
     return np.maximum(0, x)
@@ -46,7 +44,7 @@ def one_hot(y):
     return one_hot_y
 
 class NeuralNetwork:
-    def __init__(self, layer_density=128, learning_rate=0.01, epochs=1000):
+    def __init__(self, layer_density=128, learning_rate=0.001, epochs=100):
         self.epochs = epochs
         self.hidden_size = layer_density
         self.input_size = X_train.shape[0]
@@ -63,8 +61,8 @@ class NeuralNetwork:
         a2 = z2
         return z1, a1, z2, a2
 
-    def back_prop(self, X_train, X_valid, z1, a1, a2):
-        dz2 = abs(a2 - y_train)
+    def back_prop(self, X_train, y_train, z1, a1, a2):
+        dz2 = (a2 - y_train)
         dw2 = np.dot(a1.T, dz2)
         db2 = np.sum(dz2, axis=0, keepdims=True)
         da1 = np.dot(self.weights2, dz2.T)
@@ -73,31 +71,45 @@ class NeuralNetwork:
         db1 = np.sum(dz1.T, axis=0)
         return dw1, db1, dw2, db2
 
-    # def cross_entropy_loss(self, y_true, y_pred):
-    #     m = y_true.shape[1]
-    #     cost = -np.sum(np.multiply(np.log(y_pred), y_true) + np.multiply(np.log(1 - y_pred), 1 - y_true)) / m
-    #     return cost
-
     def update_params(self, dw1, db1, dw2, db2):
         self.weights1 -= self.learning_rate * dw1
         self.biases1 -= self.learning_rate * db1
         self.weights2 -= self.learning_rate * dw2
         self.biases2 -= self.learning_rate * db2
 
-        print(self.weights1)
+    def predict(self, X, a2):
+        # Predict the class of input data
+        self.forward_prop(X)
+        return np.argmax(a2, axis=1)
+
+    def loss(self, X, y, a2):
+        # Calculate the cross-entropy loss
+        self.forward_prop(X)
+        m = len(X)
+        loss = -np.sum(np.log(a2[range(m), y])) / m
+        return loss
+
+    def accuracy(self, X, y, a2):
+        # Calculate the accuracy
+        y_pred = self.predict(X, a2)
+        return np.mean(y_pred == y)
 
     def fit(self, X, y):
-        for i in range(self.epochs):
+        min_error = []
+        for epoch in range(self.epochs):
             z1, a1, z2, a2 = self.forward_prop(X)
             dw1, db1, dw2, db2 = self.back_prop(X, y, z1, a1, a2)
             self.update_params(dw1, db1, dw2, db2)
-            if i % 2 == 0:
-                print("Epoch" + "=" * 25 + ">: " + f"{i}")
-                # loss = self.cross_entropy_loss(X_train.T, a2.T)
-                # print(f"loss: {loss}")
+            accuracy = self.accuracy(X, y, a2)
+            if epoch % 10 == 0:
+                print("Epoch" + "=" * 25 + ">: " + f"{epoch}")
+                print(f"Accuracy: {accuracy}")
 
             if (np.argwhere(np.isnan(self.biases1))).any():
                 break
 
+        print(min_error)
 
-NeuralNetwork(learning_rate=0.04).fit(X_train, X_valid)
+
+model = NeuralNetwork()
+model.fit(X_train, y_train)
