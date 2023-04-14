@@ -33,6 +33,8 @@ def one_hot(y):
     one_hot_y = one_hot_y.T
     return one_hot_y
 
+# The Neural Network
+
 class NeuralNetwork:
     def __init__(self, layer_density=556, learning_rate=0.001, epochs=200):
         self.epochs = epochs
@@ -54,14 +56,14 @@ class NeuralNetwork:
         self.y_hat = softmax(self.z2)
 
     def backward(self, X, y):
-        y = y.astype(int)
+        y = self.y.astype(int)
 
         # Backward pass
         delta3 = self.y_hat
         delta3[range(len(X)), y] -= 1
-        delta2 = np.dot(delta3, self.W2.T) * (1 - np.power(self.a1, 2))
         dW2 = np.dot(self.a1.T, delta3)
         db2 = np.sum(delta3, axis=0, keepdims=True)
+        delta2 = np.dot(delta3, self.W2.T) * (1 - np.power(self.a1, 2))
         dW1 = np.dot(X.T, delta2)
         db1 = np.sum(delta2, axis=0)
 
@@ -85,16 +87,18 @@ class NeuralNetwork:
 
     def accuracy(self, X, y):
         # Calculate the accuracy
-        y_pred = self.predict(X)
-        return np.mean(y_pred == y)
+        y_pred = self.predict(X.T)
+        return np.mean(y_pred == y.T)
 
-    def fit(self, X, y):
+    def fit(self, X, y, verbose=False):
+        self.X = X.T
+        self.y = y.T
         for epoch in range(self.epochs + 1):
-            self.forward(X)
-            self.backward(X, y)
-            ls = self.loss(X, y)
+            self.forward(self.X)
+            self.backward(self.X, self.y)
+            ls = self.loss(self.X, self.y)
             accuracy = self.accuracy(X, y)
-            if epoch % 10 == 0:
+            if (epoch % 10 == 0 & verbose):
                 print("Epoch " + "=" * 25 + ">: " + f"{epoch}")
                 print(f"Loss: {ls}")
                 print(f"Accuracy: {accuracy}")
@@ -103,7 +107,8 @@ class NeuralNetwork:
             if (np.argwhere(np.isnan(self.b1))).any():
                 break
 
+
 model = NeuralNetwork()
-model.fit(X_train.T, y_train.T)
-acc = model.accuracy(X_valid.T, y_valid.T)
+model.fit(X_train, y_train, verbose=True)
+acc = model.accuracy(X_valid, y_valid)
 print(f"Accuracy: {acc}")
