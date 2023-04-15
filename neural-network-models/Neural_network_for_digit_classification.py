@@ -112,3 +112,23 @@ model = NeuralNetwork()
 model.fit(X_train, y_train, verbose=True)
 acc = model.accuracy(X_valid, y_valid)
 print(f"Accuracy: {acc}")
+
+# Plotting the image of the prediction
+
+import matplotlib.pyplot as plt
+from PIL import Image
+
+image_path = X_valid.T
+
+# Plotting Images from the dataset
+img = image_path[500]
+print(model.predict(img))
+img = img.reshape(1, 28, 28, 1) / 255.0
+
+# For images outside the dataset
+# img = np.asarray(Image.open(image_path))
+# imgplot = plt.imshow(image_path)
+
+# Plotting the image
+plt.imshow(img.reshape(28, 28), cmap='gray')
+plt.show()
