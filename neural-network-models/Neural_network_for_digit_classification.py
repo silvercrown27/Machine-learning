@@ -1,9 +1,14 @@
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler
+import matplotlib.pyplot as plt
 
+plt.style.use('seaborn-whitegrid')
+plt.rc("figure", autolayout=True, figsize=(8, 8))
+plt.rc("axes", titleweight='bold', titlesize='large',
+       labelweight='bold', labelsize='large', titlepad=10)
 
-path = f"C://Datasets/digit-set/digit-recognizer/train.csv"
+path = "../input/digit-recognizer/train.csv"
 data = pd.read_csv(path)
 
 data = np.array(data)
@@ -12,15 +17,16 @@ scaler = StandardScaler()
 
 # Fit the scaler to the data and transform the data
 m, n = data.shape
+print(m, n)
 np.random.shuffle(data)
 
 valid_data = data[0:10000].T
-train_data = data[10000:11000].T
+train_data = data[10000:20000].T
 
 X_train = scaler.fit_transform(train_data[1:n])
-y_train = (train_data[0]).reshape(1000, 1)
+y_train = train_data[0].reshape(10000, 1)
 X_valid = scaler.transform(train_data[1:n])
-y_valid = valid_data[0]
+y_valid = train_data[0]
 
 def softmax(x):
     x_max = np.max(x, axis=1, keepdims=True)
@@ -100,13 +106,12 @@ class NeuralNetwork:
             accuracy = self.accuracy(X, y)
             if (epoch % 10 == 0 & verbose):
                 print("Epoch " + "=" * 25 + ">: " + f"{epoch}")
-                print(f"Loss: {ls}")
+#                 print(f"Loss: {ls}")
                 print(f"Accuracy: {accuracy}")
                 print("\n")
 
             if (np.argwhere(np.isnan(self.b1))).any():
                 break
-
 
 model = NeuralNetwork()
 model.fit(X_train, y_train, verbose=True)
@@ -114,21 +119,19 @@ acc = model.accuracy(X_valid, y_valid)
 print(f"Accuracy: {acc}")
 
 # Plotting the image of the prediction
-
-import matplotlib.pyplot as plt
 from PIL import Image
-
+​
 image_path = X_valid.T
-
+​
 # Plotting Images from the dataset
 img = image_path[500]
 print(model.predict(img))
 img = img.reshape(1, 28, 28, 1) / 255.0
-
+​
 # For images outside the dataset
 # img = np.asarray(Image.open(image_path))
 # imgplot = plt.imshow(image_path)
-
+​
 # Plotting the image
 plt.imshow(img.reshape(28, 28), cmap='gray')
 plt.show()
